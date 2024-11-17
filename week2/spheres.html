@@ -37,7 +37,7 @@ let start_gl = (canvas, meshData, vertexSize, vertexShader, fragmentShader) => {
 }
 
 // LOGIC TO TRACK THE CURSOR
-const NSPHERES = 5;
+
 let r = canvas1.getBoundingClientRect(), cursor = [0,0,0];
 let setCursor = (e, z) => cursor = [ (e.clientX - r.left) / canvas1.width * 2 - 1,
                                      1 - (e.clientY - r.top) / canvas1.height * 2,
@@ -46,16 +46,13 @@ canvas1.onmousedown = e => setCursor(e, 1);
 canvas1.onmousemove = e => setCursor(e,  );
 canvas1.onmouseup   = e => setCursor(e, 0);
 
-//let cTracker = cursor.x;
-
-
 // TRIANGLE DATA (IN THIS CASE, ONE SQUARE)
 
-//just a square
 let meshData = [
    { type: 1, mesh: new Float32Array([ -1,1,0, 1,1,0, -1,-1,0, 1,-1,0 ]) },
 ];
 
+const NSPHERES = 3;
 
 // VERTEX AND FRAGMENT SHADERS
 
@@ -70,33 +67,12 @@ let vertexShader = `
 `;
 let fragmentShader = `
    precision mediump float;
-
-   float noise(vec3 point) { float r = 0.; for (int i=0;i<16;i++) {
-   vec3 D, p = point + mod(vec3(i,i/4,i/8) , vec3(4.0,2.0,2.0)) +
-         1.7*sin(vec3(i,5*i,8*i)), C=floor(p), P=p-C-.5, A=abs(P);
-   C += mod(C.x+C.y+C.z,2.) * step(max(A.yzx,A.zxy),A) * sign(P);
-   D=34.*sin(987.*float(i)+876.*C+76.*C.yzx+765.*C.zxy);P=p-C-.5;
-   r+=sin(6.3*dot(P,fract(D)-.5))*pow(max(0.,1.-2.*dot(P,P)),4.);
-   } return .5 * sin(r); }
-
-   float turbulence(vec3 P) {
-      float f = 0., s = 1.;
-      for (int i = 0 ; i < 9 ; i++) {
-         f += abs(noise(s * P)) / s;
-         s *= 2.;
-         P = vec3(.866*P.x + .5*P.z, P.y + 100., -.5*P.x + .866*P.z);
-      }
-      return f;
-   }
-
-
-
    uniform float uTime, uFL;
    uniform vec3  uCursor;
    uniform vec4  uSpheres[`+NSPHERES+`];
    varying vec3  vPos;
 
-   vec3 bgColor = vec3(0.02,0.,.01);
+   vec3 bgColor = vec3(0.1,0.,.01);
 
    float raySphere(vec3 V, vec3 W, vec3 C, float r) {
       V -= C;
@@ -124,17 +100,21 @@ let fragmentShader = `
       vec3 material, highlight;
       float power;
 
-
       if (uCursor.x < -.3) {
-         material = vec3(.5,.17,0.);    // GOLDs
-               highlight = 1.2 * material;
-         power = 0.;
+	 material = vec3(.5,.17,0.);    // GOLD
+         highlight = 3.2 * material;
+	 power = 0.;
+      }
+      else if (uCursor.x > .3) {
+	 material = vec3(.4,.05,.0);    // COPPER
+         highlight = 1.2 * material;
+	 power = 6.;
       }
       else {
-      material = vec3(1.,1.,0.);    // RED PLASTIC
-	   highlight = vec3(1.);
-      power = 20.;
-}
+         material = vec3(1.,0.,0.);    // RED PLASTIC
+	 highlight = vec3(1.);
+         power = 20.;
+      }
 
       float tMin = 100.;
       for (int i = 0 ; i < ` + NSPHERES + ` ; i++) {
@@ -195,17 +175,16 @@ setTimeout(() => {
       gl.uniform1f(uFL, 3);
 
       let data = [];
-      
-
       for (let n = 0 ; n < NSPHERES ; n++) {
          let theta = time + 2 * Math.PI * n / NSPHERES;
          let c = .15 * Math.cos(theta);
          let s = .15 * Math.sin(theta);
-         data.push(s, 0, -1 + c, -.01);
+         data.push(c, 0, -1 + s, -.08);
       }
       gl.uniform4fv(uSpheres, data);
 
       // RENDER THE FRAME
+
       for (let n = 0 ; n < meshData.length ; n++) {
          let mesh = meshData[n].mesh;
          gl.bufferData(gl.ARRAY_BUFFER, mesh, gl.STATIC_DRAW);
