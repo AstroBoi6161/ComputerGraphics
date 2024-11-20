@@ -1,0 +1,225 @@
+<center>
+
+<font face=arial>
+
+<p>
+
+<canvas id=canvas1></canvas>
+
+<script>
+
+let w = 800, h = 800;                 // SET CANVAS WIDTH
+canvas1.width = w;                    // AND HEIGHT
+canvas1.height = h;
+let ctx = canvas1.getContext('2d');   // GET DRAWING CONTEXT
+ctx.lineWidth = 3;                   // SET LINE WIDTH
+ctx.lineCap = 'round';                // SET LINE ENDCAP STYLE
+
+// GET THE PIXEL WIDTH OF A TEXT STRING IN THE CURRENT FONT
+
+
+
+let textWidth = text => ctx.measureText(text).width;
+let mouseX = 0;
+let mouseY = 0;
+let clicked = false;
+let clickedPoints = [];
+let testPoints = [];
+let pathisClosed = false;
+
+//-----------------------------------------------------------------------
+//Functions
+
+
+// Splice drawing stuff
+
+//Function: rescale
+function rS(p,val){ 
+      let rescaleX = (p[val].x + 1) * w/2;
+      let rescaleY = (1 - p[val].y) * h/2;
+      return { x : rescaleX, y : rescaleY};
+   }
+
+
+
+//Function: Draw a line
+function drawSpline(p){
+   if (p.length < 2) return;
+
+   ctx.beginPath();
+   ctx.moveTo(rS(p,0).x, rS(p,0).y);
+
+   for (let i = 1; i < p.length; i++){
+   ctx.lineTo(rS(p,i).x, rS(p,i).y);
+   };
+   //ctx.closePath();
+   ctx.stroke();
+}
+
+
+//Function: close Path --> on Enter (event listener)
+function closePath(p) {
+   if (p.length < 2) return;
+
+   ctx.beginPath();
+   ctx.moveTo(rS(p,0).x, rS(p,0).y);
+
+   for (let i = 1; i < p.length; i++){
+   ctx.lineTo(rS(p,i).x, rS(p,i).y);
+   };
+   ctx.lineTo(rS(p,0).x, rS(p,0).y); // back to the first point so that the last point connects back to the first one
+   ctx.closePath();
+   ctx.stroke();
+   pathisClosed = true;
+}
+//event listener for the enter key
+document.addEventListener('keydown', (e) => {
+   if (e.key === 'Enter') {
+      console.log("Close");
+      closePath(clickedPoints);
+   }
+});
+
+canvas1.addEventListener('click', () =>{
+   canvas1.focus();
+}
+)
+
+
+//Draw Bspline
+
+//P = (1-t) ((1-t)A + tB) + t((1-t)B + tC)
+
+//ctx.quadraticCurveTo()
+
+
+
+
+
+//---------------------------------------------------------------------------------------------
+// THE ANIMATION LOOP
+
+function drawFrame() {
+requestAnimationFrame(drawFrame);
+// GET THE CURRENT TIME
+
+let time = Date.now() / 1000;
+let t = Math.sin(time);
+//console.log(time);
+
+
+
+let r = canvas1.getBoundingClientRect(), cursor = [0,0,0];
+
+
+let setCursor = (e, state) => {
+   mouseX =  (e.clientX - r.left) / canvas1.width * 2 - 1,
+   mouseY = 1 - (e.clientY - r.top) / canvas1.height * 2,
+   clicked = state !== undefined ? state : clicked;
+
+   if (clicked && state ==true) {
+      clickedPoints.push({
+         x: mouseX,
+         y: mouseY
+      });
+   }
+
+};
+
+canvas1.onmousedown = e => setCursor(e, true);
+canvas1.onmousemove = e => setCursor(e);
+canvas1.onmouseup = e => setCursor(e, false);
+
+
+//console.log(clickedPoints);
+//console.log(`Mouse X: ${mouseX}, Mouse Y: ${mouseY}, Is Clicked: ${clicked}`);
+
+
+
+// CLEAR THE CANVAS FOR THIS ANIMATION FRAME
+
+ctx.fillStyle = '#3255b8';
+ctx.fillRect(0,0,w,h);
+
+// DRAW AN ANIMATING LINE FIGURE
+
+// ctx.strokeStyle = 'black';
+// ctx.beginPath();
+// ctx.moveTo(  w/3-t*w/10,   h/2);
+// ctx.lineTo(  w/2      , 5*h/6);
+// ctx.lineTo(2*w/3-t*w/6,   h/2);
+// ctx.stroke();
+
+// DRAW SOME TEXT
+
+ctx.fillStyle = 'black';
+let text1 = "I like B-splines. They are *KEWL*.";
+ctx.font = '30px Helvetica';
+ctx.fillText(text1, w/2-textWidth(text1)/2, h/7);
+
+// DRAW SOME NUMERIC TEXT
+// let text2 = time % 60 >> 0;
+// ctx.font = '30px Arial';
+// ctx.fillText(text2, w/2-textWidth(text2)/2, h/7 + 50);
+
+
+// // Draw circle at top.
+// ctx.beginPath(); //this separates the previous and current paths
+// ctx.arc(w/2,50,10,0,2 * Math.PI);
+// ctx.stroke();
+
+//Test Circles
+// //circleA
+// // Draw circle at Spline test points.
+// ctx.beginPath(); //this separates the previous and current paths
+// ctx.arc(w/4,h*3.5/5,5,0,2 * Math.PI);
+// ctx.stroke();
+
+// //circleB
+// ctx.beginPath(); //this separates the previous and current paths
+// ctx.arc(w/2,h*4/5,5,0,2 * Math.PI);
+// ctx.stroke();
+
+// //circleC
+// ctx.beginPath(); //this separates the previous and current paths
+// ctx.arc(w*4/5,h/3,5,0,2 * Math.PI);
+// ctx.stroke();
+
+testPoints.push({ x: w/4, y: h*3.5/5 }); //circleA
+testPoints.push({ x: w/2, y: h*4/5 }); //circleB
+testPoints.push({ x: w*4/5, y: h/3 }); //circleC
+
+
+//-----------------------------------------------------------------------
+// Mouse clicked stuff
+
+
+//drawSpline(testPoints);
+drawSpline(clickedPoints);
+
+
+if (pathisClosed){
+   closePath(clickedPoints);
+   //pathisClosed = false; // I will stop here because I dont want to make arrays of splines.
+}
+
+
+
+// Draw circles on Mouse X,Y points.
+
+//ctx.fillStyle = 'white';
+clickedPoints.forEach(pos => {
+   ctx.beginPath();
+   ctx.arc((pos.x + 1) * w/2, (1 -pos.y) * h/2, 5, 0, 2 * Math.PI);
+   ctx.stroke();
+});
+}
+
+
+
+
+requestAnimationFrame(drawFrame);
+//console.log(testPoints);
+</script>
+
+

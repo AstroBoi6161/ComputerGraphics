@@ -94,7 +94,7 @@ let sphere = (nu, nv) => createMesh(nu, nv, (u,v) => {
 });
 
 let tube = (nu, nv) => createMesh(nu, nv, (u,v) => {
-   let x = C(2 * Math.PI * u),
+   let x = C(2 * Math.PI * u), //why the less number the
        y = S(2 * Math.PI * u),
        z = 2 * v - 1;
    return [ x,y,z, x,y,0 ];
@@ -105,6 +105,14 @@ let disk = (nu, nv) => createMesh(nu, nv, (u,v) => {
        y = v * S(2 * Math.PI * u);
    return [ x,y,0, 0,0,1 ];
 });
+
+let someShape = (nu, nv) =>createMesh(nu, nv, (u,v) => {
+   let x = v * C(7 * Math.PI * u),
+       y = v * S(1 * Math.PI * u);
+       z = 2 * v -1;
+   return [ x,y,z, 0,x,1 ];
+});
+
 
 let cylinder = (nu, nv) => createMesh(nu, nv, (u,v) => {
    let x = C(2 * Math.PI * u),
@@ -169,11 +177,13 @@ let meshData = [
    { type: 1, color: [1.,.1,1.], mesh: new Float32Array(torus   (30, 30)) },
    { type: 0, color: [.1,1.,1.], mesh: new Float32Array(cube) },
    { type: 0, color: [1.,1.,1.], mesh: new Float32Array(octahedron) },
+   { type: 1, color: [.1,.1,.1], mesh: new Float32Array(someShape(5, 5))}
+
 ];
 
 // VERY SIMPLE VERTEX AND FRAGMENT SHADERS
 
-let vertexSize = 6;
+let vertexSize = 8; //why does this have to be a definite 6?
 let vertexShader = `
    attribute vec3 aPos, aNor;
    uniform mat4 uMatrix, uInvMatrix;

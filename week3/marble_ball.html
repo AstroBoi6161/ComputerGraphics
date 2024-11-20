@@ -95,7 +95,8 @@ void main(void) {
    vec3 color = .2*turbulence(vPos*50.)*vec3(sin(uTime*0.2),sin(.1*uTime),.7);
 
    vec3 V = vec3(0.,0.,fl);
-   vec3 W = normalize(vec3(vPos.xy,-fl));
+   vec3 W = normalize(vec3(vPos.xy+noise(vPos*uTime),-fl));
+   // An integer won't work here
 
    vec3 C = S.xyz;
    float r = S.w;

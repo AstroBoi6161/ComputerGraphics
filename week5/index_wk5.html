@@ -23,11 +23,14 @@ let matrixMultiply = (a, b) => {
       dst.push(a[n&3]*b[n&12] + a[n&3|4]*b[n&12|1] + a[n&3|8]*b[n&12|2] + a[n&3|12]*b[n&12|3]);
    return dst;
 }
+
 let C = t => Math.cos(t);
 let S = t => Math.sin(t);
-let mIdentity = () => [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 ];
+let mIdentity = () => [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 ]; //Identity matrix function
 let mPerspective = (fl, m) => matrixMultiply(m, [1,0,0,0, 0,1,0,0, 0,0,1,-1/fl, 0,0,0,1]);
+//Notes to myself: fl = focal length, m = a matrix. -1/fl on the third row is the perspective transformation. The fourth row is the homogenius coordinate, and also a part of the identity matrix.
 let mRotateX = (t, m) => matrixMultiply(m, [1,0,0,0, 0,C(t),S(t),0, 0,-S(t),C(t),0, 0,0,0,1]);
+//Notes: t = theta, rotation in radians. m = matrix to multiply
 let mRotateY = (t, m) => matrixMultiply(m, [C(t),0,-S(t),0, 0,1,0,0, S(t),0,C(t),0, 0,0,0,1]);
 let mRotateZ = (t, m) => matrixMultiply(m, [C(t),S(t),0,0, -S(t),C(t),0,0, 0,0,1,0, 0,0,0,1]);
 let mScale = (x,y,z, m) => matrixMultiply(m, [x,0,0,0, 0,y,0,0, 0,0,z,0, 0,0,0,1]);
@@ -68,6 +71,7 @@ let start_gl = (canvas, meshData, vertexSize, vertexShader, fragmentShader) => {
 
 //CREATE A TRIANGLE_STRIP MESH
 
+//nu is the number of subdivisions on the u axis
 let createMesh = (nu, nv, p) => {
    let mesh = [];
    for (let j = nv-1 ; j >= 0 ; j--) {
@@ -135,7 +139,7 @@ let strToTris = str => {
       case 'N': tris.push(-1    ); break;
       case 'n': tris.push(-0.577); break;
       case '0': tris.push( 0    ); break;
-      case 'p': tris.push( 0.577); break;
+      case 'p': tris.push( 0.577); break; //why 0.577
       case 'P': tris.push( 1    ); break;
       }
    return tris;
@@ -143,7 +147,7 @@ let strToTris = str => {
 
 // DEFINE SOME MESHES MADE FROM TRIANGLES
 
-let cube = strToTris(`PNP00P PPP00P NPP00P  NPP00P NNP00P PNP00P
+let cube = strToTris(`PNP00P PPP00P NPP00P  NPP00P NNP00P PNP00P 
                       NPN00N PPN00N PNN00N  PNN00N NNN00N NPN00N
                       PPNP00 PPPP00 PNPP00  PNPP00 PNNP00 PPNP00
                       NNPN00 NPPN00 NPNN00  NPNN00 NNNN00 NNPN00

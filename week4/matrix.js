@@ -1,17 +1,21 @@
 // matrix.js
+// Late homework, so more so review
 
-// Function to create a translation matrix
-function translation(x, y, z) {
+//Translation Matrix
+//let mTranslate = (x,y,z, m) => matrixMultiply(m, [1,0,0,0, 0,1,0,0, 0,0,1,0, x,y,z,1]);
+function mTranslation(x, y, z, m) {
     return [
-        1, 0, 0, x,
-        0, 1, 0, y,
-        0, 0, 1, z,
-        0, 0, 0, 1
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        x, y, z, 1 //homogenius coord. for translation?
     ];
 }
 
-// Function to create a rotation matrix around the X axis
-function rotationX(t) {
+// let mRotateX = (t, m) => matrixMultiply(m, [1,0,0,0, 0,C(t),S(t),0, 0,-S(t),C(t),0, 0,0,0,1]);
+// Notes: t = theta, rotation in radians. m = matrix to multiply
+// Snipped from week 5 Homework Example
+function mRotationX(t,m) {
     let c = Math.cos(t);
     let s = Math.sin(t);
     return [
