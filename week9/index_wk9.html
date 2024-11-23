@@ -17,8 +17,6 @@ ctx.lineCap = 'round';                // SET LINE ENDCAP STYLE
 
 // GET THE PIXEL WIDTH OF A TEXT STRING IN THE CURRENT FONT
 
-
-
 let textWidth = text => ctx.measureText(text).width;
 let mouseX = 0;
 let mouseY = 0;
@@ -30,32 +28,34 @@ let pathisClosed = false;
 //-----------------------------------------------------------------------
 //Functions
 
-
-// Splice drawing stuff
-
-//Function: rescale
+// Spline drawing stuff. Function: rescale
 function rS(p,val){ 
+
       let rescaleX = (p[val].x + 1) * w/2;
       let rescaleY = (1 - p[val].y) * h/2;
       return { x : rescaleX, y : rescaleY};
-   }
+}
 
+function rSv(val){  // for non arrays
+
+   let rescaleX = (val.x + 1) * w/2;
+   let rescaleY = (1 - val.y) * h/2;
+   return { x : rescaleX, y : rescaleY};
+}
 
 
 //Function: Draw a line
-function drawSpline(p){
+function drawLine(p){
    if (p.length < 2) return;
 
    ctx.beginPath();
    ctx.moveTo(rS(p,0).x, rS(p,0).y);
 
    for (let i = 1; i < p.length; i++){
-   ctx.lineTo(rS(p,i).x, rS(p,i).y);
-   };
-   //ctx.closePath();
+      ctx.lineTo(rS(p,i).x, rS(p,i).y);
+   }
    ctx.stroke();
-}
-
+};
 
 //Function: close Path --> on Enter (event listener)
 function closePath(p) {
@@ -72,6 +72,7 @@ function closePath(p) {
    ctx.stroke();
    pathisClosed = true;
 }
+
 //event listener for the enter key
 document.addEventListener('keydown', (e) => {
    if (e.key === 'Enter') {
@@ -82,18 +83,45 @@ document.addEventListener('keydown', (e) => {
 
 canvas1.addEventListener('click', () =>{
    canvas1.focus();
+});
+
+// Basic smoothing, interpolate
+//Function: interpolate
+function interpolate(pA, pB, t){ //derivative for interpolation // the handle for the curve? derivative, a.k.a. t
+   let px = (1-t) * pA.x + t * pB.x;
+   let py = (1-t) * pA.y + t * pB.y;
+   return { x: px, y: py};
+};
+
+function getBezierCurve(A,B,C,D,t){ // -D is expecting a x,y object
+   let tP = 1-t;
+
+   let bCurveX = A.x*Math.pow(tP, 3) + (3*B.x*Math.pow(tP, 2)*t) + (3*C.x*tP*Math.pow(t, 2)) + (D.x*Math.pow(t,3));
+   let bCurveY = A.y*Math.pow(tP, 3) + (3*B.y*Math.pow(tP, 2)*t) + (3*C.y*tP*Math.pow(t, 2)) + (D.y*Math.pow(t,3));
+   return {x: bCurveX, y: bCurveY};
+   //console.log(bCurveX);
+};
+
+
+
+// function drawBezierCurve(A,B,C,D,res) --> Changed input and updated the function for array
+function drawBezierCurveFromPointInput(p){
+   if (p.length < 4) return;
+
+   let drawnSplines = [];
+   ctx.beginPath();
+   ctx.moveTo(rSv(p[0]).x, rSv(p[0]).y); // first starting point of the curve
+
+   for (let i = 0; i <=p.length-4; i+=3){
+      for (let t = 0; t<=1; t += 0.01){
+         let bezierCurve = getBezierCurve(p[i], p[i+1], p[i+2], p[i+3], t);
+         drawnSplines.push(bezierCurve);
+         ctx.lineTo(rSv(bezierCurve).x, rSv(bezierCurve).y);
+      }
+   }
+   ctx.stroke();
+   return drawnSplines;
 }
-)
-
-
-//Draw Bspline
-
-//P = (1-t) ((1-t)A + tB) + t((1-t)B + tC)
-
-//ctx.quadraticCurveTo()
-
-
-
 
 
 //---------------------------------------------------------------------------------------------
@@ -106,8 +134,6 @@ requestAnimationFrame(drawFrame);
 let time = Date.now() / 1000;
 let t = Math.sin(time);
 //console.log(time);
-
-
 
 let r = canvas1.getBoundingClientRect(), cursor = [0,0,0];
 
@@ -131,10 +157,6 @@ canvas1.onmousemove = e => setCursor(e);
 canvas1.onmouseup = e => setCursor(e, false);
 
 
-//console.log(clickedPoints);
-//console.log(`Mouse X: ${mouseX}, Mouse Y: ${mouseY}, Is Clicked: ${clicked}`);
-
-
 
 // CLEAR THE CANVAS FOR THIS ANIMATION FRAME
 
@@ -153,73 +175,47 @@ ctx.fillRect(0,0,w,h);
 // DRAW SOME TEXT
 
 ctx.fillStyle = 'black';
-let text1 = "I like B-splines. They are *KEWL*.";
-ctx.font = '30px Helvetica';
-ctx.fillText(text1, w/2-textWidth(text1)/2, h/7);
-
-// DRAW SOME NUMERIC TEXT
-// let text2 = time % 60 >> 0;
-// ctx.font = '30px Arial';
-// ctx.fillText(text2, w/2-textWidth(text2)/2, h/7 + 50);
-
-
-// // Draw circle at top.
-// ctx.beginPath(); //this separates the previous and current paths
-// ctx.arc(w/2,50,10,0,2 * Math.PI);
-// ctx.stroke();
-
-//Test Circles
-// //circleA
-// // Draw circle at Spline test points.
-// ctx.beginPath(); //this separates the previous and current paths
-// ctx.arc(w/4,h*3.5/5,5,0,2 * Math.PI);
-// ctx.stroke();
-
-// //circleB
-// ctx.beginPath(); //this separates the previous and current paths
-// ctx.arc(w/2,h*4/5,5,0,2 * Math.PI);
-// ctx.stroke();
-
-// //circleC
-// ctx.beginPath(); //this separates the previous and current paths
-// ctx.arc(w*4/5,h/3,5,0,2 * Math.PI);
-// ctx.stroke();
-
-testPoints.push({ x: w/4, y: h*3.5/5 }); //circleA
-testPoints.push({ x: w/2, y: h*4/5 }); //circleB
-testPoints.push({ x: w*4/5, y: h/3 }); //circleC
-
+let text1 = "A very Binary Bezier Spline Sketcher. Draws Spline every 4 clicks.";
+let text2 = "Hit Enter to 'close' the spline shape and its bounds."
+ctx.font = '20px Helvetica';
+ctx.fillText(text1, w/2-textWidth(text1)/2, h/8-10);
+ctx.fillText(text2, w/2-textWidth(text1)/2, h/8+20);
 
 //-----------------------------------------------------------------------
 // Mouse clicked stuff
 
 
-//drawSpline(testPoints);
-drawSpline(clickedPoints);
+//drawBezierCurve(clickedPoints[0], clickedPoints[1], clickedPoints[2], clickedPoints[3], 0.5);
+let drawnSplines = drawBezierCurveFromPointInput(clickedPoints);
 
 
 if (pathisClosed){
-   closePath(clickedPoints);
-   //pathisClosed = false; // I will stop here because I dont want to make arrays of splines.
+   closePath(drawnSplines); //pathisClosed = false; // I will stop here and not make arrays of splines.
+   ctx.beginPath();
+   for (let i = 1; i <drawnSplines.length; i++){
+      ctx.moveTo(drawnSplines[i-1].x, drawnSplines[i-1].y);
+
+      let animX = drawnSplines[i].x + t;
+      let animY = drawnSplines[i].y + Math.cos(t) * 30;
+      //console.log(animX);
+      //ctx.moveTo(  w/3-t*w/10,   h/2);
+      ctx.moveTo(rSv({x: animX, y: animY}).x, rSv({ x: animX, y: animY }).y); // animation currently not working
+      ctx.lineTo(drawnSplines[i].x, drawnSplines[i].y);
+      ctx.stroke();
+   };
 }
 
 
-
 // Draw circles on Mouse X,Y points.
-
-//ctx.fillStyle = 'white';
 clickedPoints.forEach(pos => {
    ctx.beginPath();
-   ctx.arc((pos.x + 1) * w/2, (1 -pos.y) * h/2, 5, 0, 2 * Math.PI);
+   ctx.arc((pos.x + 1) * w/2 , (1 -pos.y) * h/2, 5, 0, 2 * Math.PI);
    ctx.stroke();
 });
 }
 
 
-
-
 requestAnimationFrame(drawFrame);
-//console.log(testPoints);
 </script>
 
 

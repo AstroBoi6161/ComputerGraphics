@@ -26,6 +26,8 @@ function mRotationX(t,m) {
     ];
 }
 
+export {mRotationX};
+
 // Function to create a rotation matrix around the Y axis
 function rotationY(t) {
     let c = Math.cos(t);
