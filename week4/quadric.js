@@ -13,7 +13,7 @@ const xParaboloid = [
     0, 0, 0, 0,
     0, 1, 0, 0,
     0, 0, 1, 0,
-    0, 0, 0, -1
+    1, 0, 0, 0
 ];
 
 // Define a 4x4 matrix for a y-paraboloid
@@ -21,7 +21,7 @@ const yParaboloid = [
     1, 0, 0, 0,
     0, 0, 0, 0,
     0, 0, 1, 0,
-    0, 0, 0, -1
+    0, 1, 0, 0
 ];
 
 // Define a 4x4 matrix for a z-paraboloid
@@ -29,30 +29,30 @@ const zParaboloid = [
     1, 0, 0, 0,
     0, 1, 0, 0,
     0, 0, 0, 0,
-    0, 0, 0, -1
+    0, 0, 1, 0
 ];
 
 // Define a 4x4 matrix for an x-slab
 const xSlab = [
+    1, 0, 0, 0,
     0, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
+    0, 0, 0, 0,
     0, 0, 0, -1
 ];
 
 // Define a 4x4 matrix for a y-slab
 const ySlab = [
-    1, 0, 0, 0,
     0, 0, 0, 0,
-    0, 0, 1, 0,
+    0, 1, 0, 0,
+    0, 0, 0, 0,
     0, 0, 0, -1
 ];
 
 // Define a 4x4 matrix for a z-slab
 const zSlab = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
     0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 1, 0,
     0, 0, 0, -1
 ];
 
@@ -82,10 +82,10 @@ const zCylinder = [
 
 // Define a 4x4 matrix for an everywhere quadric
 const everywhere = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, -1
 ];
 
 // Export the matrices

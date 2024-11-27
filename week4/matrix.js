@@ -1,55 +1,96 @@
 // matrix.js
-// Late homework, so more so review
+// Working on top of the provided materials, late submission
+
+let matrixMultiply = (a, b) => {
+    let dst = [];
+    for (let n = 0 ; n < 16 ; n++)
+       dst.push(a[n&3]*b[n&12] + a[n&3|4]*b[n&12|1] + a[n&3|8]*b[n&12|2] + a[n&3|12]*b[n&12|3]);
+    return dst;
+}
+
+// Function to multiply two matrices - implemented
+function multiply(a, b) {
+    let newMatrix = [];
+    for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+            newMatrix[i * 4 + j] = 0;
+            for (let k = 0; k < 4; k++) {
+                newMatrix[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
+            }
+        }
+    }
+    return newMatrix;
+}
 
 //Translation Matrix
 //let mTranslate = (x,y,z, m) => matrixMultiply(m, [1,0,0,0, 0,1,0,0, 0,0,1,0, x,y,z,1]);
-function mTranslation(x, y, z, m) {
-    return [
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        x, y, z, 1 //homogenius coord. for translation?
-    ];
+function mTranslate(x, y, z, m) {
+    return matrixMultiply(m, 
+        [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            x, y, z, 1
+
+        ]
+    );
 }
+
 
 // let mRotateX = (t, m) => matrixMultiply(m, [1,0,0,0, 0,C(t),S(t),0, 0,-S(t),C(t),0, 0,0,0,1]);
 // Notes: t = theta, rotation in radians. m = matrix to multiply
-// Snipped from week 5 Homework Example
-function mRotationX(t,m) {
+// Snipped from week 7 Homework Example
+// expecting t as rotation angle here
+function mRotateX(t,m) {
     let c = Math.cos(t);
     let s = Math.sin(t);
-    return [
-        1, 0, 0, 0,
-        0, c, -s, 0,
-        0, s, c, 0,
-        0, 0, 0, 1
-    ];
+    return matrixMultiply(m, 
+        [
+            1, 0, 0, 0,
+            0, c, s, 0,
+            0, -s, c, 0,
+            0, 0, 0, 1
+
+        ]
+    );
 }
 
-export {mRotationX};
 
-// Function to create a rotation matrix around the Y axis
-function rotationY(t) {
+
+/*
+Multiple Function:
+let dst = [];
+for (let n = 0 ; n < 16 ; n++)
+    dst.push(a[n&3]*b[n&12] + a[n&3|4]*b[n&12|1] + a[n&3|8]*b[n&12|2] + a[n&3|12]*b[n&12|3]);
+ return dst;
+ */
+//let mRotateY = (t, m) =>
+    //matrixMultiply(m, [C(t),0,-S(t),0, 0,1,0,0, S(t),0,C(t),0, 0,0,0,1]);
+function mRotateY(t,m) {
     let c = Math.cos(t);
     let s = Math.sin(t);
-    return [
-        c, 0, s, 0,
-        0, 1, 0, 0,
-        -s, 0, c, 0,
-        0, 0, 0, 1
-    ];
+    return matrixMultiply(m, 
+        [
+            c, 0, s, 0,
+            0, 1, 0, 0,
+            s, 0, c, 0,
+            0, 0, 0, 1
+        ]
+    );
 }
 
-// Function to create a rotation matrix around the Z axis
-function rotationZ(t) {
+// let mRotateZ = (t, m) => matrixMultiply(m, [C(t),S(t),0,0, -S(t),C(t),0,0, 0,0,1,0, 0,0,0,1]);
+function mRotateZ(t,m) {
     let c = Math.cos(t);
     let s = Math.sin(t);
-    return [
-        c, -s, 0, 0,
-        s, c, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-    ];
+    return matrixMultiply(m, 
+        [
+            c, s, 0, 0,
+            -s, c, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ]
+    );
 }
 
 // Function to create a scaling matrix
@@ -62,21 +103,9 @@ function scale(x, y, z) {
     ];
 }
 
-// Function to multiply two matrices
-function multiply(a, b) {
-    let c = [];
-    for (let i = 0; i < 4; i++) {
-        for (let j = 0; j < 4; j++) {
-            c[i * 4 + j] = 0;
-            for (let k = 0; k < 4; k++) {
-                c[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
-            }
-        }
-    }
-    return c;
-}
 
-// Function to transpose a matrix
+
+// Function to transpose 4 x 4 matrix
 function transpose(m) {
     return [
         m[0], m[4], m[8], m[12],
@@ -86,7 +115,7 @@ function transpose(m) {
     ];
 }
 
-// Function to calculate the inverse of a matrix
+// Matrix library from Dr. Perlin's library
 function matrixInverse(src) {
     let dst = [], det = 0, cofactor = (c, r) => {
         let s = (i, j) => src[c + i & 3 | (r + j & 3) << 2];
@@ -100,6 +129,31 @@ function matrixInverse(src) {
     return dst;
 }
 
-// Export the functions
-export { translation, rotationX, rotationY, rotationZ, scale, multiply, transpose, matrixInverse };
+//Also provided by Dr Perlin's sketch
+let mIdentity = () => [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 ];
+let mPerspective = (fl, m) => matrixMultiply(m, [1,0,0,0, 0,1,0,0, 0,0,1,-1/fl, 0,0,0,1]);
 
+
+export { mTranslate, mRotateX, mRotateY, mRotateZ, scale, multiply, transpose, matrixInverse, matrixMultiply};
+
+
+// MATRIX OBJECT, BUILT FROM MATRIX FUNXTIONS
+//From Dr. Perlin's library
+/*
+function Matrix() {
+   let stack = [mIdentity()], top = 0;
+   let set = arg => { stack[top] = arg; return this; }
+   let get = () => stack[top];
+
+   this.identity = () => set(mIdentity());
+   this.perspective = fl => set(mPerspective(fl, get()));
+   this.rotateX = t => set(mRotateX(t, get()));
+   this.rotateY = t => set(mRotateY(t, get()));
+   this.rotateZ = t => set(mRotateZ(t, get()));
+   this.scale = (x,y,z) => set(mScale(x,y,z, get()));
+   this.translate = (x,y,z) => set(mTranslate(x,y,z, get()));
+   this.get = () => get();
+   this.save = () => set(stack[top++].slice());
+   this.restore = () => --top;
+}
+   */

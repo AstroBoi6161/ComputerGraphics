@@ -1,0 +1,140 @@
+<body bgcolor=#808080><font face=courier>
+<center><canvas id=canvas1 width=900 height=700></canvas>
+<script src=lib.js></script>
+<script>
+
+trackMouse(canvas1);
+texture(0,'gear.jpg');
+
+// I PRE-BUILD ALL MY OBJECTS FOR EFFICIENCY.
+
+let myCube     = Cube();
+let myCylinder = Cylinder(20);
+let mySphere   = Sphere(20);
+
+// MY MATERIAL IN THIS EXAMPLE IS UNIFORM FOG.
+
+addMaterial(1, `color = mix(color, vec3(.5), min(.95,.007 * dot(vTpos, vTpos)));`);
+startGL(canvas1);
+
+// MY SPRING HAS HIGH MASS, SO IT WILL RESPOND LIKE A HEAVY OBJECT.
+
+let spring = new Spring();
+spring.setMass(6);
+
+let springSpring = new Spring();
+springSpring.setMass(3);
+
+let springSpringSpring = new Spring();
+springSpringSpring.setMass(1);
+
+function drawFrame() {
+   requestAnimationFrame(drawFrame);
+   let time = Date.now() / 1000;
+
+   // SCALE THE SCENE NON-UNIFORMLY BECAUSE THE CANVAS IS NOT SQUARE.
+
+   VM.identity().perspective(3).scale(1,canvas1.width/canvas1.height,1);
+
+   // USE THE MOUSE TO ROTATE THE VIEW ONLY IF NOT RUNNING ON A PHONE.
+
+   if (! isPhone())
+      VM.turnX(canvas1.ry/30).turnY(canvas1.rx/30);
+
+   drawScene(() => {
+      material = 1;
+
+      // PLACE AND THEN RENDER THE JOINTS (SHOULDER, ELBOW, WRIST), USING IK.
+
+      let s = [-.51,.6,-3]; // 3.5 on the .z coord is interesting - shoulder
+      let w = [.3+.5*ease(.5+.5*S(5*time+C(4*time))),.6,-3]; // wrist
+      let e = add(s,ik(.5,.5,subtract(w,s),[0,-1,0]));
+      //console.log(w[0]);
+      // DANGLE A MASS BELOW THE ELBOW, AND ANIMATE IT WITH A SPRING FORCE.
+
+      spring.setForce(e[0]); //grabbing x data of array
+      spring.update(.03);
+      let x = spring.getPosition();
+      let p = add(e, scale(normalize([x,-.6,0]),.6)); // getting the below position of the dangle
+      M.S().move(p).aim(subtract(p,e)).scale(.05).draw(myCube,[0,.5,.5]).R(); // drawing cube
+      M.S().move(mix(e,p,.5)).aim(subtract(p,e)).scale(.015,.015,distance(e,p)/2).draw(myCube,[0,.5,.5]).R();
+      
+      
+      springSpring.setForce(p[0]); //grabbing x data of array
+      springSpring.update(.03);
+      let x1 = springSpring.getPosition();
+      let p1 = add(p, scale(normalize([x1,-.2,0]),.2)); // getting the below position of the dangle
+      M.S().move(p1).aim(subtract(p1,p)).scale(.03).draw(myCube,[.8,.8,0]).R(); // drawing cube
+      M.S().move(mix(p,p1,.5)).aim(subtract(p1,p)).scale(.01,.01,distance(p,p1)/2).draw(myCube,[.8,.8,0]).R();
+
+
+      springSpringSpring.setForce(p[0]); //grabbing x data of array
+      springSpringSpring.update(.03);
+      let x2 = springSpringSpring.getPosition();
+      let p2 = add(p1, scale(normalize([x1,-.05,0]),.15)); // getting the below position of the dangle
+      M.S().move(p2).aim(subtract(p2,p1)).scale(.015).draw(myCube,[.5,0,.5]).R(); // drawing cube
+      M.S().move(mix(p1,p2,.5)).aim(subtract(p2,p1)).scale(.005,.005,distance(p1,p2)/2).draw(myCube,[.5,0,.5]).R();
+
+
+      //console.log(p);
+      let s1 = w;
+      let w1 = [.7,-.5*ease(.5+.5*S(5*time+C(4*time))),-3];
+      let e1 = add(s1,ik(.5,.5,subtract(w1,s1),[1,-1,-1]));
+      
+      //the green -the connectors
+      let s2 = p;
+      let w2 = w1;
+      let e2 = add(p,ik(.3,.7,subtract(w2,s2),[0,-1,1]));
+
+      let s3 = s;
+      let w3 = [-.4,-.5*ease(.5+.5*S(5*time+C(4*time))),-3];
+      let e3 = add(s3,ik(.7,.3,subtract(w3,s3),[1,-1,-1]));
+
+      let w4 = w3;
+      let e4 = add(p,ik(.5,.5,subtract(w3,s2),[0,1,1]));
+
+
+      //These draw the spheres
+      M.S().move(s).scale(.03).draw(mySphere  ,[.2,.2,.2]).R();
+      M.S().move(w).scale(.03).draw(mySphere  ,[.2,.2,.2]).R();
+      M.S().move(e).scale(.03).draw(myCylinder,[.2,.2,.2]).R();
+
+      //M.S().move(s1).scale(.03).draw(myCylinder,[.2,.2,.2]).R(); --> already drawn, so will not draw
+      //M.S().move(s1).scale(.03).draw(myCylinder,[1,.2,.2]).R(); //draw the second writst
+      M.S().move(w1).scale(.03).draw(myCylinder,[.1,.1,.1]).R();
+      M.S().move(e1).scale(.03).draw(myCylinder,[.1,.1,.1]).R();
+
+      M.S().move(w3).scale(.03).draw(myCylinder,[.2,.2,.2]).R();
+      M.S().move(e3).scale(.03).draw(myCylinder,[.2,.2,.2]).R();
+
+      //M.S().move(w2).scale(.02).draw(myCylinder,[0,.6,.1]).R();
+      M.S().move(e2).scale(.02).draw(myCylinder,[.05,.05,.9]).R();
+
+      M.S().move(e4).scale(.02).draw(myCylinder,[1,0,.1]).R();
+
+      // DRAW THE LIMBS THAT CONNECT THE JOINTS.
+
+      M.S().move(mix(s,e,.5)).aim(subtract(e,s)).scale(.02,.02,distance(s,e)/2).draw(myCube,[.2,.2,.2]).R();
+      M.S().move(mix(e,w,.5)).aim(subtract(w,e)).scale(.02,.02,distance(e,w)/2).draw(myCube,[.2,.2,.2]).R();
+
+      M.S().move(mix(s1,e1,.5)).aim(subtract(e1,s1)).scale(.02,.02,distance(s1,e1)/2).draw(myCube,[.2,.2,.2]).R();
+      M.S().move(mix(e1,w1,.5)).aim(subtract(w1,e1)).scale(.02,.02,distance(e1,w1)/2).draw(myCube,[.2,.2,.2]).R();
+      
+      M.S().move(mix(s2,e2,.5)).aim(subtract(e2,s2)).scale(.01,.01,distance(s2,e2)/2).draw(myCube,[.05,.05,.9]).R();
+      M.S().move(mix(e2,w2,.5)).aim(subtract(w2,e2)).scale(.01,.01,distance(e2,w2)/2).draw(myCube,[.05,.05,.9]).R();
+      
+      M.S().move(mix(s3,e3,.5)).aim(subtract(e3,s3)).scale(.02,.02,distance(s3,e3)/2).draw(myCube,[.2,.2,.2]).R();
+      M.S().move(mix(e3,w3,.5)).aim(subtract(w3,e3)).scale(.02,.02,distance(e3,w3)/2).draw(myCube,[.2,.2,.2]).R();
+
+      M.S().move(mix(s2,e4,.5)).aim(subtract(e4,s2)).scale(.01,.01,distance(s2,e4)/2).draw(myCube,[1,0,.1]).R();
+      M.S().move(mix(e4,w4,.5)).aim(subtract(w4,e4)).scale(.01,.01,distance(e4,w4)/2).draw(myCube,[1,0,.1]).R();
+
+      // ADD A TEXTURED OBJECT IN THE DISTANCE TO SHOW THAT FOG IS WORKING.
+
+      M.S().move(0,0,-12).scale(2).draw(myCube,[1,1,1],1,0).R();
+   });
+}
+requestAnimationFrame(drawFrame);
+
+</script>
+

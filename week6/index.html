@@ -170,12 +170,12 @@ let octahedron = strToTris(`00Nnnn 0N0nnn N00nnn  P00pnn 0N0pnn 00Npnn
 // DEFINE ALL THE OBJECT COLORS AND SHAPES
 
 let meshData = [
-   { type: 1, color: [1.,.1,.1], mesh: new Float32Array(sphere  (20, 10)) },
-   { type: 1, color: [.1,1.,.1], mesh: new Float32Array(tube    (20,  1)) },
-   { type: 1, color: [.1,.1,1.], mesh: new Float32Array(disk    (20,  1)) },
+   //{ type: 1, color: [1.,.1,.1], mesh: new Float32Array(sphere  (20, 10)) },
+   //{ type: 1, color: [.1,1.,.1], mesh: new Float32Array(tube    (20,  1)) },
+   //{ type: 1, color: [.1,.1,1.], mesh: new Float32Array(disk    (20,  1)) },
    { type: 1, color: [1.,1.,.1], mesh: new Float32Array(cylinder( 4,  6)) },
-   { type: 1, color: [1.,.1,1.], mesh: new Float32Array(torus   (30, 30)) },
-   { type: 0, color: [.1,1.,1.], mesh: new Float32Array(cube) },
+   //{ type: 1, color: [1.,.1,1.], mesh: new Float32Array(torus   (30, 30)) },
+   //{ type: 0, color: [.1,1.,1.], mesh: new Float32Array(cube) },
    { type: 0, color: [1.,1.,1.], mesh: new Float32Array(octahedron) },
    { type: 1, color: [.1,.1,.1], mesh: new Float32Array(someShape(5, 5))}
 
@@ -183,7 +183,7 @@ let meshData = [
 
 // VERY SIMPLE VERTEX AND FRAGMENT SHADERS
 
-let vertexSize = 8; //why does this have to be a definite 6?
+let vertexSize = 6; //why does this have to be a definite 6?
 let vertexShader = `
    attribute vec3 aPos, aNor;
    uniform mat4 uMatrix, uInvMatrix;
