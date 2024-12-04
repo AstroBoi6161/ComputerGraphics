@@ -130,11 +130,11 @@ function matrixInverse(src) {
 }
 
 //Also provided by Dr Perlin's sketch
-let mIdentity = () => [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 ];
+let mIdentity = () => ([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
 let mPerspective = (fl, m) => matrixMultiply(m, [1,0,0,0, 0,1,0,0, 0,0,1,-1/fl, 0,0,0,1]);
+let iMatrix = mIdentity();
 
-
-export { mTranslate, mRotateX, mRotateY, mRotateZ, scale, multiply, transpose, matrixInverse, matrixMultiply};
+export { mTranslate, matrixMultiply, mRotateX, mRotateY, mRotateZ, scale, multiply, transpose, matrixInverse, iMatrix, mPerspective};
 
 
 // MATRIX OBJECT, BUILT FROM MATRIX FUNXTIONS

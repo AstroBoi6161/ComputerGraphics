@@ -14,7 +14,7 @@ let mySphere   = Sphere(20);
 
 // MY MATERIAL IN THIS EXAMPLE IS UNIFORM FOG.
 
-addMaterial(1, `color = mix(color, vec3(.5), min(.95,.007 * dot(vTpos, vTpos)));`);
+addMaterial(1, `color = mix(color, vec3(.5), min(.5,.007 * dot(vTpos, vTpos)));`);
 startGL(canvas1);
 
 // MY SPRING HAS HIGH MASS, SO IT WILL RESPOND LIKE A HEAVY OBJECT.

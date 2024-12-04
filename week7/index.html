@@ -1,5 +1,8 @@
-<body bgcolor=black>
-<center><canvas id='canvas1' width=800 height=800></canvas>
+<body bgcolor="black"></body>
+<center>
+   <div style="color: #FFFFFF">
+      <h1>Astro's Dancing Camel</h1>
+<canvas id='canvas1' width=800 height=800></canvas>
 
 <script>
 
@@ -251,25 +254,47 @@ function renderFrame() {
 
    let t = 2 * time;
    let limbLength = .4;
-   let hipWidth = limbLength / 4;
+   let hipWidth = limbLength / 4 * .1;
    let hipSway = .2 * C(t);
-   let phaseDiff = 1;//.5 + .5 * S(time);
-   let skinColor = [0,.5,1];
+   let shoulderSway = -hipSway*2
+   let phaseDiff = 1.5 + .5 * S(time*5);
+   let skinColor = [1,.6,.3];
+   let mouthOpen = .5 * C(t);
 
    // ANIMATE AND RENDER THE SCENE
 
-// M.translate(0,.4,0).rotateY(-Math.PI/2 + S(time));
-   M.translate(0,.4,0).rotateY(-Math.PI/3);
+   M.translate(0,0,0).rotateY(-Math.PI/2 + time * 0.3).scale(.7,.7,.7);
+   //M.translate(0,.4,0).rotateY(-Math.PI/2);
 
    M.rotateX(hipSway);
    M.save();
-      M.scale(.05,.05,hipWidth);
-      render(Sphere, skinColor);              // PELVIS
+      M.scale(.5,.1,.2);
+      render(Sphere, skinColor);              // Torso
    M.restore();
+   
+   
+   M.save();
+      M.rotateX(hipSway);
+      M.rotateZ(-.5);
+      M.translate(.35,.45,0);
+      M.scale(.06,.3,.06);
+      render(Sphere, skinColor);              // neck
+   M.restore();
+   //M.rotateX(hipSway*2);
+   
+   M.save();
+      M.rotateX(hipSway);
+      M.rotateZ(-.5);
+      M.translate(.45,.8,0);
+      M.scale(.2,.1,.12);
+
+      render(Sphere, skinColor);              // head
+   M.restore();
+
    for (let side = -1 ; side <= 1 ; side += 2) {
-      let knee = .5 + .5 * S(t + side * Math.PI/2 * phaseDiff);
+      let knee = -.5 + .5 * S(t + side * Math.PI/2 * phaseDiff);
       M.save();
-         M.translate(0,0,side * hipWidth);
+         M.translate(-.4,0,side * hipWidth);
          M.rotateX(-hipSway);
          M.rotateZ(knee);
          M.save();
@@ -279,7 +304,7 @@ function renderFrame() {
          M.restore();
          M.translate(0,-limbLength,0);
          M.save();
-            M.rotateZ(-2 * knee);
+            M.rotateZ(-1 * knee);
             M.save();
                M.translate(0,-limbLength/2,0);
                M.scale(.05,limbLength/2,.05);
@@ -294,6 +319,38 @@ function renderFrame() {
          M.restore();
       M.restore();
    }
+
+   for (let side = -1 ; side <= 1 ; side += 2) { // Second Legs
+      let knee = -.5 + .5 * S(t + side * Math.PI/2 * phaseDiff);
+      M.save();
+         M.translate(.4,0,side*hipWidth);
+         M.rotateX(hipSway);
+         M.rotateZ(knee);
+         M.save();
+            M.translate(0,-limbLength/2,0);
+            M.scale(.05,limbLength/2,.05);
+            render(Sphere, skinColor);        // UPPER LEG
+         M.restore();
+         M.translate(0,-limbLength,0);
+         M.save();
+            M.rotateZ(-1 * knee);
+            M.save();
+               M.translate(0,-limbLength/2,0);
+               M.scale(.05,limbLength/2,.05);
+               render(Sphere, skinColor);     // LOWER LEG
+            M.restore();
+            M.translate(0,-limbLength,0);
+            M.save();
+               M.translate(limbLength/4,0,0);
+	       M.scale(limbLength/4,.05,.05);
+               render(Sphere, skinColor);     // FOOT
+            M.restore();
+         M.restore();
+      M.restore();
+   }
+
+
+
 }
 requestAnimationFrame(renderFrame);
 

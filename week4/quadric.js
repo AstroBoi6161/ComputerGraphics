@@ -89,4 +89,4 @@ const everywhere = [
 ];
 
 // Export the matrices
-export { sphere, xParaboloid, yParaboloid, zParaboloid, xSlab, ySlab, zSlab, xCylinder, yCylinder, zCylinder, everywhere };
+//export { sphere, xParaboloid, yParaboloid, zParaboloid, xSlab, ySlab, zSlab, xCylinder, yCylinder, zCylinder, everywhere };
