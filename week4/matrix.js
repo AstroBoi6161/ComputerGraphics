@@ -7,7 +7,7 @@ let matrixMultiply = (a, b) => {
        dst.push(a[n&3]*b[n&12] + a[n&3|4]*b[n&12|1] + a[n&3|8]*b[n&12|2] + a[n&3|12]*b[n&12|3]);
     return dst;
 }
-
+/* thid */
 // Function to multiply two matrices - implemented
 function multiply(a, b) {
     let newMatrix = [];
