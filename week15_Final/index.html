@@ -1,0 +1,477 @@
+<head>
+   <h1>Gravitational Attraction</h1>
+   
+   <style>
+       canvas {
+           background-color: black;
+       }
+   </style>
+</head>
+<body>
+
+
+   <button id="toggleButton">Toggle</button>
+       <font color=#000000 size=4 onmousedown=down('t') onmouseup=up()></font></button><br>
+
+
+   Mass Threshold: <input type=range id=mass style="width: 400"></input><br>
+   Accelration: <input type=range id=vel style="width: 400" min="0.1"></input><br>
+   Particle Thickness: <input type=range id=thick style="width: 400"></input><br>
+
+   <canvas id="myCanvas"></canvas>
+<script>
+
+/*Astro Seunghwa Lee- Computer Graphics NYU FA24*/
+/* Matrix Library starts here*/
+// MATRIX SUPPORT LIBRARY
+
+let mInverse = m => {
+   let d = [], de = 0, co = (c, r) => {
+      let s = (i, j) => m[c+i & 3 | (r+j & 3) << 2];
+      return (c+r & 1 ? -1 : 1) * ( (s(1,1) * (s(2,2) * s(3,3) - s(3,2) * s(2,3)))
+                                  - (s(2,1) * (s(1,2) * s(3,3) - s(3,2) * s(1,3)))
+                                  + (s(3,1) * (s(1,2) * s(2,3) - s(2,2) * s(1,3))) );
+   }
+   for (let n = 0 ; n < 16 ; n++) d.push(co(n >> 2, n & 3));
+   for (let n = 0 ; n <  4 ; n++) de += m[n] * d[n << 2]; 
+   for (let n = 0 ; n < 16 ; n++) d[n] /= de;
+   return d;
+}
+let mxm = (a, b) => {
+   let d = [];
+   for (let n = 0 ; n < 16 ; n++)
+      d.push(a[n&3]*b[n&12] + a[n&3|4]*b[n&12|1] + a[n&3|8]*b[n&12|2] + a[n&3|12]*b[n&12|3]);
+   return d;
+}
+let C = t => Math.cos(t), S = t => Math.sin(t);
+let mId = () => [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 ];
+let mPe = (fl, m) => mxm(m, [1,0,0,0, 0,1,0,0, 0,0,1,-1/fl, 0,0,0,1]);
+let mRX = (t, m) => mxm(m, [1,0,0,0, 0,C(t),S(t),0, 0,-S(t),C(t),0, 0,0,0,1]);
+let mRY = (t, m) => mxm(m, [C(t),0,-S(t),0, 0,1,0,0, S(t),0,C(t),0, 0,0,0,1]);
+let mRZ = (t, m) => mxm(m, [C(t),S(t),0,0, -S(t),C(t),0,0, 0,0,1,0, 0,0,0,1]);
+let mSc = (x,y,z, m) => mxm(m, [x,0,0,0, 0,y,0,0, 0,0,z,0, 0,0,0,1]);
+let mTr = (x,y,z, m) => mxm(m, [1,0,0,0, 0,1,0,0, 0,0,1,0, x,y,z,1]);
+function Matrix() {
+   let stack = [mId()], top = 0;
+   let set = arg => { stack[top] = arg; return this; }
+   let get = () => stack[top];
+   this.identity = () => set(mId());
+   this.perspective = fl => set(mPe(fl, get()));
+   this.turnX = t => set(mRX(t, get()));
+   this.turnY = t => set(mRY(t, get()));
+   this.turnZ = t => set(mRZ(t, get()));
+   this.scale = (x,y,z) => set(mSc(x,y?y:x,z?z:x, get()));
+   this.move = (x,y,z) => set(mTr(x,y,z, get()));
+   this.get = () => get();
+   this.S = () => set(stack[top++].slice());
+   this.R = () => --top;
+   this.draw = (shape,color,opacity) => draw(shape,color,opacity);
+}
+
+/* Matrix Library Ends here */
+
+
+/* WEB GL stuff starts here */
+// INITIALIZE WEBGL
+
+let start_gl = (canvas, vertexSize, vertexShader, fragmentShader) => {
+   let gl = canvas.getContext("webgl");
+   let program = gl.createProgram();
+   gl.program = program;
+   let addshader = (type, src) => {
+      let shader = gl.createShader(type);
+      gl.shaderSource(shader, src);
+      gl.compileShader(shader);
+      if (! gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+         throw "Cannot compile shader:\n\n" + gl.getShaderInfoLog(shader);
+      gl.attachShader(program, shader);
+   };
+   addshader(gl.VERTEX_SHADER  , vertexShader  );
+   addshader(gl.FRAGMENT_SHADER, fragmentShader);
+   gl.linkProgram(program);
+   if (! gl.getProgramParameter(program, gl.LINK_STATUS))
+      throw "Could not link the shader program!";
+   gl.useProgram(program);
+   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+   gl.enable(gl.DEPTH_TEST);
+   gl.enable(gl.BLEND);
+   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+   gl.depthFunc(gl.LEQUAL);
+   let vertexAttribute = (name, size, position) => {
+      let attr = gl.getAttribLocation(program, name);
+      gl.enableVertexAttribArray(attr);
+      gl.vertexAttribPointer(attr, size, gl.FLOAT, false, vertexSize * 4, position * 4);
+   }
+   vertexAttribute('aPos', 3, 0);
+   vertexAttribute('aNor', 3, 3);
+   return gl;
+}
+
+/*3D Shape Making start here*/
+// IMPLEMENT VARIOUS 3D SHAPES
+
+let createMesh = (nu, nv, p) => {
+   let mesh = [];
+   for (let j = nv-1 ; j >= 0 ; j--) {
+      for (let i = 0 ; i <= nu ; i++)
+         mesh.push(p(i/nu,(j+1)/nv), p(i/nu,j/nv));
+      mesh.push(p(1,j/nv), p(0,j/nv));
+   }
+   return new Float32Array(mesh.flat());
+}
+let sphere = (nu, nv) => createMesh(nu, nv, (u,v) => {
+   let theta = 2 * Math.PI * u;
+   let phi = Math.PI * (v - .5);
+   let x = C(phi) * C(theta),
+       y = C(phi) * S(theta),
+       z = S(phi);
+   return [ x,y,z, x,y,z ];
+});
+let tube = (nu, nv) => createMesh(nu, nv, (u,v) => {
+   let x = C(2 * Math.PI * u),
+       y = S(2 * Math.PI * u),
+       z = 2 * v - 1;
+   return [ x,y,z, x,y,0 ];
+});
+let disk = (nu, nv) => createMesh(nu, nv, (u,v) => {
+   let x = v * C(2 * Math.PI * u),
+       y = v * S(2 * Math.PI * u);
+   return [ x,y,0, 0,0,1 ];
+});
+let cylinder = (nu, s) => createMesh(nu, 6, (u,v) => {
+   s = s ? s : 1;
+   let x = C(2 * Math.PI * u),
+       y = S(2 * Math.PI * u);
+   switch (5 * v >> 0) {
+   case 0: return [ 0,0,-1, 0,0,-1 ];
+   case 1: return [ x,y,-1, 0,0,-1 ];
+   case 2: return [ x,y,-1, x,y, 0 ];
+   case 3: return [ s*x,s*y, 1, x,y, 0 ];
+   case 4: return [ s*x,s*y, 1, 0,0, 1 ];
+   case 5: return [ 0,0, 1, 0,0, 1 ];
+   }
+});
+let torus = (nu, nv, r) => createMesh(nu, nv, (u,v) => {
+   r = r ? r : .5;
+   let ct = C(2 * Math.PI * u);
+   let st = S(2 * Math.PI * u);
+   let cp = C(2 * Math.PI * v);
+   let sp = S(2 * Math.PI * v);
+   let x = (1 + r * cp) * ct,
+       y = (1 + r * cp) * st,
+       z =      r * sp;
+   return [ x,y,z, cp*ct,cp*st,sp ];
+});
+let strToTris = s => {
+   let t = [], i;
+   for (let n = 0 ; n < s.length ; n++)
+      if ((i = 'N0P'.indexOf(s.charAt(n))) >= 0)
+         t.push(i-1);
+   return t;
+}
+let cube = strToTris(`PNP00P PPP00P NPP00P  NPP00P NNP00P PNP00P
+                      NPN00N PPN00N PNN00N  PNN00N NNN00N NPN00N
+                      PPNP00 PPPP00 PNPP00  PNPP00 PNNP00 PPNP00
+                      NNPN00 NPPN00 NPNN00  NPNN00 NNNN00 NNPN00
+                      NPP0P0 PPP0P0 PPN0P0  PPN0P0 NPN0P0 NPP0P0
+                      PNN0N0 PNP0N0 NNP0N0  NNP0N0 NNN0N0 PNN0N0`);
+
+// API FOR ACCESSING 3D SHAPES
+
+let Cube       = ()    => { return { type: 0, mesh: cube }; }
+let Cylinder   = (n,s) => { return { type: 1, mesh: cylinder(n,s) }; }
+let Disk       = n     => { return { type: 1, mesh: disk    (n, 1) }; }
+let Sphere     = n     => { return { type: 1, mesh: sphere  (n, n/2>>0) }; }
+let Torus      = (n,r) => { return { type: 1, mesh: torus   (n, n, r) }; }
+let Tube       = n     => { return { type: 1, mesh: tube    (n, 1) }; }
+
+// GPU SHADERS
+
+let vertexSize = 6;
+let vertexShader = `
+   attribute vec3 aPos, aNor;
+   uniform mat4 uMatrix, uInvMatrix;
+   varying vec3 vPos, vNor;
+   void main() {
+      vec4 pos = uMatrix * vec4(aPos, 1.0);
+      vec4 nor = vec4(aNor, 0.0) * uInvMatrix;
+      vPos = pos.xyz;
+      vNor = nor.xyz;
+      gl_Position = pos * vec4(1.,1.,-.1,1.);
+   }
+`;
+let fragmentShader = `
+   precision mediump float;
+   uniform vec3 uColor;
+   uniform float uOpacity;
+   varying vec3 vPos, vNor;
+   void main(void) {
+      float c = .05 + max(0., dot(normalize(vNor), vec3(.57)));
+      gl_FragColor = vec4(sqrt(c * uColor), uOpacity);
+   }
+`;
+
+// DECLARE GL-RELATED VARIABLES AND MATRIX OBJECT
+
+let gl = start_gl(canvas1, vertexSize, vertexShader, fragmentShader);
+let uColor     = gl.getUniformLocation(gl.program, "uColor"    );
+let uOpacity   = gl.getUniformLocation(gl.program, "uOpacity"  );
+let uInvMatrix = gl.getUniformLocation(gl.program, "uInvMatrix");
+let uMatrix    = gl.getUniformLocation(gl.program, "uMatrix"   );
+let M = new Matrix();
+
+// DRAW A SINGLE SHAPE TO THE WEBGL CANVAS
+
+let draw = (Shape, color, opacity) => {
+   gl.uniform1f       (uOpacity  , opacity===undefined ? 1 : opacity);
+   gl.uniform3fv      (uColor    , color );
+   gl.uniformMatrix4fv(uInvMatrix, false, mInverse(M.get()));
+   gl.uniformMatrix4fv(uMatrix   , false, M.get()          );
+   gl.bufferData(gl.ARRAY_BUFFER, Shape.mesh, gl.STATIC_DRAW);
+   gl.drawArrays(Shape.type ? gl.TRIANGLE_STRIP : gl.TRIANGLES, 0, Shape.mesh.length / vertexSize);
+   return M;
+}
+
+// THE USER DRAGS THE MOUSE TO VARY rx AND ry
+
+let mx, my, rx = 0, ry = 0;
+canvas1.onmousedown = e => { mx = e.clientX; my = e.clientY; }
+canvas1.onmousemove = e => { if (mx) { rx += e.clientX - mx; ry += e.clientY - my; mx = e.clientX; my = e.clientY; } }
+canvas1.onmouseup = e => mx = undefined;
+
+// DEFINE COLORS FOR ALL THE 3D PARTS
+
+
+
+// IMPLEMENT PART SELECTION (TRIGGERED BY THE HTML BUTTONS)
+
+let selected = '';
+let down = a => selected = a;
+let up = () => selected = '';
+let s = a => selected == '' ? 1 : selected != a ? .5 : 1;
+
+let time = Date.now() / 1000, t = 0;
+
+
+const canvas = document.getElementById("myCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const movers = [];
+        let sun;
+        const G = 1;
+        let angle = 0;
+
+        let circleOn = false;
+        document.getElementById("toggleButton").addEventListener("click",function(){
+            if (circleOn ==true){
+                circleOn = false;
+            } else{
+                circleOn = true;
+            }
+
+            console.log("circle is:" +circleOn);
+        });
+
+
+        class Mover {
+            constructor(x, y, velx, vely, m) {
+                let accel = 1;
+                accel *= 1/vel.value;
+                
+                this.pos = { x: x, y: y };
+                this.vel = { x: velx, y: vely };
+                this.acc = { x: accel, y: accel };
+                this.mass = m;
+                this.r = Math.sqrt(this.mass) * 2;
+            }
+
+            attract(mover) {
+                const force = { x: this.pos.x - mover.pos.x, y: this.pos.y - mover.pos.y };
+                const d = Math.max(2, Math.min(Math.sqrt(force.x * force.x + force.y * force.y), 25));
+                const G = 10;
+                const strength = (G * this.mass * mover.mass) / (d * d);
+                const magnitude = Math.sqrt(force.x * force.x + force.y * force.y);
+                force.x = (force.x / magnitude) * strength;
+                force.y = (force.y / magnitude) * strength;
+                mover.applyForce(force);
+            }
+
+            ring() {
+                let thickness = thick.value/5;
+
+                for (let mover of movers) {
+                    const rad = this.mass;
+                    const cx = this.pos.x;
+                    const cy = this.pos.y;
+                    /*
+                    if (circleOn ==true){
+                        cx *= Math.cos(angle);
+                        cy *= Math.sin(angle);
+                    }
+                    */
+
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, thickness, 0, 2 * Math.PI);
+                    ctx.fillStyle = "white";
+                    ctx.fill();
+                    angle += 0.2;
+                }
+            }
+
+            applyForce(force) {
+                const f = { x: force.x / this.mass, y: force.y / this.mass };
+                this.acc.x += f.x;
+                this.acc.y += f.y;
+            }
+
+            update() {
+                this.vel.x += this.acc.x;
+                this.vel.y += this.acc.y;
+                this.pos.x += this.vel.x;
+                this.pos.y += this.vel.y;
+                this.acc.x = 0;
+                this.acc.y = 0;
+            }
+
+            show() {
+                
+                ctx.beginPath();
+                ctx.arc(this.pos.x, this.pos.y, this.r, 0, 2 * Math.PI);
+                
+                //ctx.fillStyle = "red";
+                //ctx.fill();
+            }
+        }
+
+        function setup() {
+
+            for (let i = 0; i < 5; i++) {
+                const angle = Math.random() * 2 * Math.PI;
+                const pos = { x: Math.cos(angle) * (Math.random() * 40 + 10), y: Math.sin(angle) * (Math.random() * 40 + 10) };
+                const vel = { x: -pos.y/50, y: pos.x/50 };
+                let massThres = mass.value/10;
+                const m = 1*massThres;
+                console.log(m);
+                movers.push(new Mover(pos.x, pos.y, vel.x, vel.y, m));
+            }
+            sun = new Mover(0, 0, 0, 0, 5);
+        }
+
+        function updateSliders(){
+            
+
+            let velSlow = vel.value;
+            for (let mover of movers){
+                if (mover.vel.x < .01){
+                    return;
+                }
+
+                mover.vel.x *= 1/velSlow;
+                mover.vel.y *= 1/velSlow;
+                //mover.vel.x += 0.01;
+                //mover.vel.y += 0.01;
+            }
+
+
+
+        }
+
+
+
+function drawFrame() {
+   requestAnimationFrame(drawFrame);
+
+   let velSlow = vel.value/100;
+            //ctx.fillStyle = "rgba(0, 0, 0, 0.95)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            updateSliders();
+            
+            for (let mover of movers) {
+                sun.attract(mover);
+                for (let other of movers) {
+                    if (mover !== other) {
+                        mover.attract(other);
+                    }
+                }
+            }
+            for (let mover of movers) {
+                mover.update();
+                mover.show();
+                mover.ring();
+            }
+            ctx.restore();
+            
+            requestAnimationFrame(draw);
+            //console.log(pCount);
+
+   /*
+   let cDH = color.value/100; //color Handle
+   let cDHB = colorB.value/100;
+
+   let batteryColor = [1-cDH,cDHB,1];
+   let gearColor    = [.7,cDH,cDHB];
+   let motorColor   = [cDH,cDHB,1-cDH];
+   let wheelColor   = [cDHB,cDH,.1];
+   let rimColor     = [1,cDHB,cDH];
+*/
+   // RATE OF TIME ADVANCEMENT IS THROTTLED BY THE SPIN SLIDER
+
+   let newTime = Date.now() / 1000;
+   t += (newTime - time) * (speed.value - 50) / 25;
+   if (Math.abs(speed.value - 50) < 5)
+      speed.value = 50;
+   time = newTime;
+
+   let sizeThres = size.value/100;
+
+   //console.log(sizeThres);
+   //console.log(color.value);
+
+   // DRAW THE VEHICLE FOR THIS ANIMATION FRAME
+
+   M.S().perspective(3).turnX(ry/100).turnY(rx/100).turnX(-Math.PI/2).move(0,0,-.2).scale(2).turnZ(t);
+      for (let i = 0 ; i < 5 ; i++) {
+         M.S().turnZ(2*Math.PI*i/3);
+            M.S().move(.04,Math.sin(.02)*t,.3).turnY(Math.PI/2).turnX(.45*Math.PI).move(0,0,.03).scale(.015,.015,.01).draw(Cylinder(10,2), gearColor, s('g')).R();
+            M.S().move(.04,0,.18).scale(sizeThres,.01,.01).draw(Cylinder(20,.5), gearColor, s('g')).R();
+         M.R();
+      }
+      for (let i = 0 ; i < 3 ; i++) {
+         M.S().turnX(2*Math.PI*i/3);
+            M.S().move(.04,.02,.3).turnY(Math.PI/2).turnZ(.45*Math.PI).move(0,0,.03).scale(.015,.015,.01).draw(Cylinder(10,2), gearColor, s('g')).R();
+            M.S().move(.04,0,.18).scale(.04,.04,.01).draw(Cylinder(20,.5), gearColor, s('g')).R();
+         M.R();
+      }
+      
+      for (let i = 0 ; i < 3 ; i++) {
+         M.S().turnY(2*Math.PI*i/3);
+            M.S().move(.04,0,.2).turnY(Math.PI/2).turnX(.45*Math.PI).move(0,0,.15).scale(sizeThres,.08,.05).draw(Cylinder(20), motorColor, s('m')).R();
+            M.S().move(.04,0,.2).turnY(Math.PI/2).turnX(.45*Math.PI).move(0,0,.09).scale(.01,.01,.05).draw(Cylinder(20), motorColor, s('m')).R();
+            M.S().turnZ(-.1).move(.17,0,.21).scale(sizeThres,.07,.06).draw(Cylinder(30), batteryColor, s('b')).R();
+	    for (let j = 0 ; j < 4 ; j++) {
+               M.S().move(.126,0,0).turnX( j    *Math.PI/2+t*t).move(0,.1,0).scale(.001,.001,.001).draw(Torus(30,5),wheelColor, s('o')).R();
+               M.S().move(.190,0,0).turnY((j+.5)*Math.PI/2-t).move(0,.1,0).scale(.001,.001,.01).draw(Torus(30,5),wheelColor, s('o')).R();
+            }
+         M.R();
+      }
+      for (let i = 0 ; i < 3 ; i++) {
+         M.S().turnZ(2*Math.PI*i/3);
+            M.S().move(.158,0,0).turnY(Math.PI/2).scale(.1,.1,.02).draw(Cylinder(10), wheelColor, .6 * s('o')).R();
+            M.S().move(.19,0,0).turnY(Math.PI/2).scale(.09,.09,.015).draw(Cylinder(8), wheelColor, .4 * s('o')).R();
+         M.R();
+      }
+      //M.S().move(0,0,0).scale(.3,.3,.3).draw(sphere(30)).R;
+      //M.S().move(0,0,.31).scale(.25,.25,.005).draw(Cylinder(30), boardColor, .7 * s('c')).R();
+      //M.S().move(0,0,.11).scale(.26,.26,.21).draw(Tube(30), caseColor, .3).R();
+   M.R();
+}
+
+requestAnimationFrame(drawFrame);
+
+setup();
+</script>
+

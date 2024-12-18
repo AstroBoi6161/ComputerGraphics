@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <h1>Gravitational Attraction</h1>
+    
+    <style>
+        canvas {
+            background-color: black;
+        }
+    </style>
+</head>
+<body>
+
+
+    <button id="toggleButton">Toggle</button>
+        <font color=#000000 size=4 onmousedown=down('t') onmouseup=up()></font></button><br>
+
+
+    Mass Threshold: <input type=range id=mass style="width: 400"></input><br>
+    Accelration: <input type=range id=vel style="width: 400" min="0.1"></input><br>
+    Particle Thickness: <input type=range id=thick style="width: 400"></input><br>
+
+    <canvas id="myCanvas"></canvas>
+    <script>
+        
+        const canvas = document.getElementById("myCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const movers = [];
+        let sun;
+        const G = 1;
+        let angle = 0;
+
+        let circleOn = false;
+        document.getElementById("toggleButton").addEventListener("click",function(){
+            if (circleOn ==true){
+                circleOn = false;
+            } else{
+                circleOn = true;
+            }
+
+            console.log("circle is:" +circleOn);
+        });
+
+
+        class Mover {
+            constructor(x, y, velx, vely, m) {
+                let accel = 1;
+                accel *= 1/vel.value;
+                
+                this.pos = { x: x, y: y };
+                this.vel = { x: velx, y: vely };
+                this.acc = { x: accel, y: accel };
+                this.mass = m;
+                this.r = Math.sqrt(this.mass) * 2;
+            }
+
+            attract(mover) {
+                const force = { x: this.pos.x - mover.pos.x, y: this.pos.y - mover.pos.y };
+                const d = Math.max(2, Math.min(Math.sqrt(force.x * force.x + force.y * force.y), 25));
+                const G = 10;
+                const strength = (G * this.mass * mover.mass) / (d * d);
+                const magnitude = Math.sqrt(force.x * force.x + force.y * force.y);
+                force.x = (force.x / magnitude) * strength;
+                force.y = (force.y / magnitude) * strength;
+                mover.applyForce(force);
+            }
+
+            ring() {
+                let thickness = thick.value/5;
+
+                for (let mover of movers) {
+                    const rad = this.mass;
+                    const cx = this.pos.x;
+                    const cy = this.pos.y;
+                    
+                    if (circleOn){
+                        cx *= Math.cos(angle);
+                        cy *= Math.sin(angle);
+                    }
+                    
+
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, thickness, 0, 2 * Math.PI);
+                    ctx.fillStyle = "white";
+                    ctx.fill();
+                    angle += 0.2;
+                }
+            }
+
+            applyForce(force) {
+                const f = { x: force.x / this.mass, y: force.y / this.mass };
+                this.acc.x += f.x;
+                this.acc.y += f.y;
+            }
+
+            update() {
+                this.vel.x += this.acc.x;
+                this.vel.y += this.acc.y;
+                this.pos.x += this.vel.x;
+                this.pos.y += this.vel.y;
+                this.acc.x = 0;
+                this.acc.y = 0;
+            }
+
+            show() {
+                
+                ctx.beginPath();
+                ctx.arc(this.pos.x, this.pos.y, this.r, 0, 2 * Math.PI);
+                
+                //ctx.fillStyle = "red";
+                //ctx.fill();
+            }
+        }
+
+        function setup() {
+
+            for (let i = 0; i < 5; i++) {
+                const angle = Math.random() * 2 * Math.PI;
+                const pos = { x: Math.cos(angle) * (Math.random() * 40 + 10), y: Math.sin(angle) * (Math.random() * 40 + 10) };
+                const vel = { x: -pos.y/50, y: pos.x/50 };
+                let massThres = mass.value/10;
+                const m = 1*massThres;
+                console.log(m);
+                movers.push(new Mover(pos.x, pos.y, vel.x, vel.y, m));
+            }
+            sun = new Mover(0, 0, 0, 0, 5);
+        }
+
+        function updateSliders(){
+            
+
+            let velSlow = vel.value;
+            for (let mover of movers){
+                if (mover.vel.x < .01){
+                    return;
+                }
+
+                mover.vel.x *= 1/velSlow;
+                mover.vel.y *= 1/velSlow;
+                //mover.vel.x += 0.01;
+                //mover.vel.y += 0.01;
+            }
+
+
+
+        }
+
+        function draw() {
+            
+            let velSlow = vel.value/100;
+            //ctx.fillStyle = "rgba(0, 0, 0, 0.95)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            updateSliders();
+            
+            for (let mover of movers) {
+                sun.attract(mover);
+                for (let other of movers) {
+                    if (mover !== other) {
+                        mover.attract(other);
+                    }
+                }
+            }
+            for (let mover of movers) {
+                mover.update();
+                mover.show();
+                mover.ring();
+            }
+            ctx.restore();
+            
+            requestAnimationFrame(draw);
+            //console.log(pCount);
+        }
+        
+        setup();
+        draw();
+        
+    </script>
+</body>
+</html>

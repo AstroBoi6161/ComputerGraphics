@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <h1 id="heading">Gravitational Attraction</h1>
+    <style>
+        canvas {
+            background-color: black;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="toggleButton">Toggle Sub-circles</button>
+    <br>
+
+    Particle Color: <input type="color" id="particleColor" value="#FFFFFF" onchange="updateHeadingColor()"><br>
+    Background Color: <input type="color" id="bgColor" value="#000000"><br>
+    Mass Threshold: <input type="range" id="mass" style="width: 400"><br>
+    Acceleration: <input type="range" id="vel" style="width: 400" min="0.1"><br>
+    Count: <input type="range" id="count" style="width: 400" min="1" max="100" value="5"><br>
+    Polar Diameter: <input type="range" id="polarDiameter" style="width: 400" min="10" max="100" value="50"><br>
+
+    <canvas id="myCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("myCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let movers = [];
+        let sun;
+        const G = 1;
+        let angle = 0;
+
+        let circleOn = false;
+        document.getElementById("toggleButton").addEventListener("click", function() {
+            circleOn = !circleOn;
+            console.log("circle is:", circleOn);
+        });
+
+        function updateHeadingColor() {
+            let particleColor = document.getElementById("particleColor").value;
+            document.getElementById("heading").style.color = particleColor;
+        }
+
+        class Mover {
+            constructor(x, y, velx, vely, m) {
+                let accel = 1;
+                accel *= 1 / vel.value;
+                
+                this.pos = { x: x, y: y };
+                this.vel = { x: velx, y: vely };
+                this.acc = { x: accel, y: accel };
+                this.mass = m;
+                this.r = Math.sqrt(this.mass) * 2;
+            }
+
+            attract(mover) {
+                const force = { x: this.pos.x - mover.pos.x, y: this.pos.y - mover.pos.y };
+                const d = Math.max(2, Math.min(Math.sqrt(force.x * force.x + force.y * force.y), 25));
+                const G = 10;
+                const strength = (G * this.mass * mover.mass) / (d * d);
+                const magnitude = Math.sqrt(force.x * force.x + force.y * force.y);
+                force.x = (force.x / magnitude) * strength;
+                force.y = (force.y / magnitude) * strength;
+                mover.applyForce(force);
+            }
+
+            ring() {
+                let particleColor = document.getElementById("particleColor").value;
+                let thickness = this.mass / 2; // Particle thickness driven by mass
+                let polarDiameter = document.getElementById("polarDiameter").value; // Polar coordinate diameter
+
+                if (circleOn) {
+                    let numCircles = 12; // Number of circles for the polar effect
+                    for (let i = 0; i < numCircles; i++) { // Adjust number of circles for recursive effect
+                        const rad = this.mass * polarDiameter / 10;
+                        let angleOffset = (i / numCircles) * Math.PI * 2;
+                        let cx = this.pos.x + rad * Math.cos(angle + angleOffset);
+                        let cy = this.pos.y + rad * Math.sin(angle + angleOffset);
+
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, thickness, 0, 2 * Math.PI);
+                        ctx.fillStyle = particleColor;
+                        ctx.fill();
+                    }
+                } else {
+                    let cx = this.pos.x;
+                    let cy = this.pos.y;
+
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, thickness, 0, 2 * Math.PI);
+                    ctx.fillStyle = particleColor;
+                    ctx.fill();
+                }
+
+                angle += 0.01; // Adjust the speed of the angle change
+            }
+
+            applyForce(force) {
+                const f = { x: force.x / this.mass, y: force.y / this.mass };
+                this.acc.x += f.x;
+                this.acc.y += f.y;
+            }
+
+            update() {
+                this.vel.x += this.acc.x;
+                this.vel.y += this.acc.y;
+                this.pos.x += this.vel.x;
+                this.pos.y += this.vel.y;
+                this.acc.x = 0;
+                this.acc.y = 0;
+            }
+
+            show() {
+                let particleColor = document.getElementById("particleColor").value;
+
+                ctx.beginPath();
+                ctx.arc(this.pos.x, this.pos.y, this.r*mass.value/15, 0, 2 * Math.PI);
+                ctx.fillStyle = particleColor;
+                ctx.fill();
+            }
+        }
+
+        function setup() {
+            movers = [];
+            let pCount = document.getElementById("count").value;
+            for (let i = 0; i < pCount; i++) {
+                const angle = Math.random() * 2 * Math.PI;
+                const pos = { x: Math.cos(angle) * (Math.random() * 40 + 10), y: Math.sin(angle) * (Math.random() * 40 + 10) };
+                const vel = { x: -pos.y / 50, y: pos.x / 50 };
+                let massThres = mass.value / 10;
+                const m = 1 * massThres;
+                movers.push(new Mover(pos.x, pos.y, vel.x, vel.y, m));
+            }
+            sun = new Mover(0, 0, 0, 0, 5);
+        }
+
+        function updateSliders() {
+            let velSlow = vel.value;
+            for (let mover of movers) {
+                if (mover.vel.x < 0.01) {
+                    return;
+                }
+                mover.vel.x *= 1 / velSlow;
+                mover.vel.y *= 1 / velSlow;
+            }
+        }
+
+        function draw() {
+            let bgColor = document.getElementById("bgColor").value;
+
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+
+            // Ensure the sun stays at the center
+            sun.pos.x = 0;
+            sun.pos.y = 0;
+
+            updateSliders();
+
+            for (let mover of movers) {
+                sun.attract(mover);
+                for (let other of movers) {
+                    if (mover !== other) {
+                        mover.attract(other);
+                    }
+                }
+            }
+            for (let mover of movers) {
+                mover.update();
+                mover.show();
+                mover.ring();
+            }
+            ctx.restore();
+            
+            requestAnimationFrame(draw);
+        }
+
+        document.getElementById("count").addEventListener("input", setup);
+        document.getElementById("vel").addEventListener("input", updateSliders);
+
+        setup();
+        draw();
+        updateHeadingColor(); // Initial call to set the heading color
+    </script>
+</body>
+</html>
