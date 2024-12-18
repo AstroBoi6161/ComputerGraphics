@@ -1,0 +1,84 @@
+<body bgcolor=#808080><font face=courier>
+    <center><canvas id=canvas1 width=900 height=700></canvas>
+    <script src=lib.js></script>
+    <script src=moverClass.js></script>
+    <script>
+    
+    trackMouse(canvas1);
+    let myCube     = Cube();
+    let myCylinder = Cylinder(20);
+    let mySphere   = Sphere(20);
+    
+
+    // MY MATERIAL IN THIS EXAMPLE IS UNIFORM FOG.
+    
+    //addMaterial(1, `color = mix(color, vec3(.5), min(.5,.007 * dot(vTpos, vTpos)));`);
+    
+    startGL(canvas1);
+    //canvas1.width = window.innerWidth;
+    //canvas1.height = window.innerHeight;
+
+
+    let movers = [];
+    let sun;
+    const G = 1;
+    let angle = 0;
+
+    function setup() {
+        movers = [];
+            
+            for (let i = 0; i < 5; i++) {
+                const angle = Math.random() * 2 * Math.PI;
+                const pos = { x: Math.cos(angle) * (Math.random() * 40 + 10), y: Math.sin(angle) * (Math.random() * 40 + 10) };
+                const vel = { x: -pos.x / 50, y: pos.y / 50, z: -pos.z / 50 };
+                const m = 1;
+                movers.push(new Mover(pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, m));
+            }
+            sun = new Mover(0, 0, 0, 0, 0, 0, 10);
+      
+    }
+
+
+    function drawFrame() {
+       requestAnimationFrame(drawFrame);
+       let time = Date.now() / 1000;
+    
+       // SCALE THE SCENE NON-UNIFORMLY BECAUSE THE CANVAS IS NOT SQUARE.
+    
+       VM.identity().perspective(3).scale(1,canvas1.width/canvas1.height,1);
+       if (! isPhone()){
+        VM.turnX(canvas1.ry/30).turnY(canvas1.rx/30);
+       };
+
+
+       //sun.pos.x = 0;
+       //sun.pos.y = 0;
+       mover.show();
+       for (let mover of movers) {
+                sun.attract(mover);
+                for (let other of movers) {
+                    if (mover !== other) {
+                        mover.attract(other);
+                    }
+                }
+            }
+            for (let mover of movers) {
+                mover.update();
+                mover.show();
+                mover.ring();
+            }
+            M.R();     
+            
+   
+       drawScene(() => {
+          //material = 1;
+          M.S().move(0,0,0).turnY(time).turnX(time).scale(.02).draw(myCube,[1,.1,.1]).R(); // drawing cube
+          
+          M.S().move(.1,.1,.1).turnX(time).scale(.01).draw(mySphere ,[.2,.2,.2]).R(); //draw sphere
+       });
+    }
+    requestAnimationFrame(drawFrame);
+    
+    </script>
+    
+    

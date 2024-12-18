@@ -21,9 +21,12 @@
     Polar Diameter: <input type="range" id="polarDiameter" style="width: 400" min="10" max="100" value="50"><br>
 
     <canvas id="myCanvas"></canvas>
+    
+    
     <script>
+        //let myCube     = Cube();
         const canvas = document.getElementById("myCanvas");
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext("webgl");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
@@ -72,21 +75,24 @@
                 let polarDiameter = document.getElementById("polarDiameter").value; // Polar coordinate diameter
 
                 if (circleOn) {
-                    let numCircles = 12; // Number of circles for the polar effect
-                    for (let i = 0; i < numCircles; i++) { // Adjust number of circles for recursive effect
+                    let numCircles = 12; // Number of circles for the polar coordinate
+                    for (let i = 0; i < numCircles; i++) { // number of circles for recursive effect
                         const rad = this.mass * polarDiameter / 10;
                         let angleOffset = (i / numCircles) * Math.PI * 2;
                         let cx = this.pos.x + rad * Math.cos(angle + angleOffset);
                         let cy = this.pos.y + rad * Math.sin(angle + angleOffset);
 
+                        /*
                         ctx.beginPath();
                         ctx.arc(cx, cy, thickness, 0, 2 * Math.PI);
                         ctx.fillStyle = particleColor;
                         ctx.fill();
+                        */
                     }
                 } else {
                     let cx = this.pos.x;
                     let cy = this.pos.y;
+                    //M.S().move(cx,cy,0).scale(.02).draw(myCube,[.2,.2,.2]).R();
 
                     ctx.beginPath();
                     ctx.arc(cx, cy, thickness, 0, 2 * Math.PI);
@@ -94,7 +100,7 @@
                     ctx.fill();
                 }
 
-                angle += 0.01; // Adjust the speed of the angle change
+                angle += 0.01; // Angle speed change
             }
 
             applyForce(force) {
@@ -125,16 +131,17 @@
         function setup() {
             movers = [];
             let pCount = document.getElementById("count").value;
-            for (let i = 0; i < pCount; i++) {
+            for (let i = 0; i < pCount; i++) { //particle count control
                 const angle = Math.random() * 2 * Math.PI;
                 const pos = { x: Math.cos(angle) * (Math.random() * 40 + 10), y: Math.sin(angle) * (Math.random() * 40 + 10) };
                 const vel = { x: -pos.y / 50, y: pos.x / 50 };
-                let massThres = mass.value / 10;
+                let massThres = mass.value / 10; //mapping val
                 const m = 1 * massThres;
                 movers.push(new Mover(pos.x, pos.y, vel.x, vel.y, m));
             }
             sun = new Mover(0, 0, 0, 0, 5);
         }
+
 
         function updateSliders() {
             let velSlow = vel.value;
@@ -149,12 +156,16 @@
 
         function draw() {
             let bgColor = document.getElementById("bgColor").value;
+            /* DRAW FRAME OF Projection Matrix */
+            // SCALE THE SCENE NON-UNIFORMLY BECAUSE THE CANVAS IS NOT SQUARE.
+
+
 
             ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.save();
             ctx.translate(canvas.width / 2, canvas.height / 2);
-
+            
             // Ensure the sun stays at the center
             sun.pos.x = 0;
             sun.pos.y = 0;
@@ -184,7 +195,7 @@
 
         setup();
         draw();
-        updateHeadingColor(); // Initial call to set the heading color
+        updateHeadingColor(); // update heading color so it matches the input color
     </script>
 </body>
 </html>
